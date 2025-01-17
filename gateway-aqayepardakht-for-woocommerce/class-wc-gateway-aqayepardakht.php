@@ -1,32 +1,25 @@
 <?php
 
-if (!defined('ABSPATH')) {
-  exit;
-}
+if(!defined('ABSPATH'))exit;
 
-function Load_aqayepardakht_Gateway() {
+if ( class_exists( 'WC_Payment_Gateway' ) && !class_exists( 'WC_aqayepardakht' ) ) {
+    
+    class WC_aqayepardakht extends WC_Payment_Gateway {
 
-  if ( class_exists( 'WC_Payment_Gateway' ) && !class_exists( 'WC_Gateway_aqayepardakht' ) && !function_exists( 'Woocommerce_Add_aqayepardakht_Gateway' ) ) {
-
-    add_filter( 'woocommerce_payment_gateways', 'Woocommerce_Add_aqayepardakht_Gateway' );
-
-    function Woocommerce_Add_aqayepardakht_Gateway( $methods ) {
-      $methods[] = 'WC_Gateway_aqayepardakht';
-      return $methods;
-    }
-
-    class WC_Gateway_aqayepardakht extends WC_Payment_Gateway {
-
+      private $pin;
+      private $sandbox;
+      private $success_massage;
+      private $failed_massage;
+      private $author;
+      
       public function __construct() {
-
 
         $this->author = 'aqayepardakht.ir';
 
-
-        $this->id = 'aqayepardakht';
+        $this->id = 'WC_aqayepardakht';
         $this->method_title = __( 'آقای پرداخت', 'woocommerce' );
         $this->method_description = __( 'تنظیمات درگاه پرداخت آقای پرداخت برای افزونه فروشگاه ساز ووکامرس', 'woocommerce' );
-        $this->icon = apply_filters( 'WC_aqayepardakht_logo', WP_PLUGIN_URL . "/" . plugin_basename( dirname( __FILE__ ) ) . '/assets/images/logo.png' );
+        $this->icon = apply_filters('woo_aqayepardakht_logo', WOO_GAPIRDU. '/assets/images/logo.svg');
         $this->has_fields = false;
         
         $this->init_form_fields();
@@ -44,18 +37,20 @@ function Load_aqayepardakht_Gateway() {
         if ( version_compare( WOOCOMMERCE_VERSION, '2.0.0', '>=' ) )
           add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
         else
-          add_action( 'woocommerce_update_options_payment_gateways', array( $this, 'process_admin_options' ) );
-        add_action( 'woocommerce_receipt_' . $this->id . '', array( $this, 'Send_to_aqayepardakht_Gateway_Aqaye_Pardakht' ) );
-        add_action( 'woocommerce_api_' . strtolower( get_class( $this ) ) . '', array( $this, 'Return_from_aqayepardakht_Gateway_Aqaye_Pardakht' ) );
+        add_action( 'woocommerce_update_options_payment_gateways', array( $this, 'process_admin_options' ) );
+        add_action( 'woocommerce_receipt_' . $this->id . '', array( $this, 'Send_to_aqayepardakht_Gateway' ) );
+        add_action( 'woocommerce_api_' . strtolower( get_class( $this ) ) . '', array( $this, 'Return_from_aqayepardakht_Gateway' ) );
+        if (is_admin() && $this->settings[ 'sandbox' ] === 'yes') {
+          add_action('admin_bar_menu', array($this, 'add_sandbox_notice_to_admin_bar'), 100);
+        }
+        add_action('admin_notices', array($this, 'admin_notice_missing_pin'));
 
       }
 
 
-      public function admin_options() {
-        $action = $this->author;
-        do_action( 'WC_Gateway_Payment_Actions', $action );
-        parent::admin_options();
-      }
+		public function admin_options(){
+			parent::admin_options();
+		}
 
       public function init_form_fields() {
         $this->form_fields = apply_filters( 'WC_aqayepardakht_Config',
@@ -137,7 +132,7 @@ function Load_aqayepardakht_Gateway() {
         );
       }
 
-      public function Send_to_aqayepardakht_Gateway_Aqaye_Pardakht( $order_id ) {
+      public function Send_to_aqayepardakht_Gateway( $order_id ) {
         ob_start();
         global $woocommerce;
         $woocommerce->session->order_id_aqayepardakht = $order_id;
@@ -193,7 +188,7 @@ function Load_aqayepardakht_Gateway() {
         $Description = apply_filters( 'WC_aqayepardakht_Description', $Description, $order_id );
         do_action( 'WC_aqayepardakht_Gateway_Payment', $order_id, $Description );
 
-        $CallbackURL = add_query_arg( 'wc_order', $order_id, WC()->api_request_url( 'WC_Gateway_aqayepardakht' ) );
+        $CallbackURL = add_query_arg( 'wc_order', $order_id, WC()->api_request_url( 'WC_aqayepardakht' ) );
 
         $Sandbox = $this->sandbox;
 
@@ -264,7 +259,7 @@ function Load_aqayepardakht_Gateway() {
         }
       }
 
-      public function Return_from_aqayepardakht_Gateway_Aqaye_Pardakht() {
+      public function Return_from_aqayepardakht_Gateway() {
 
         $status = sanitize_text_field( $_POST[ 'status' ] );
         $transid = sanitize_text_field( $_POST[ 'transid' ] );
@@ -446,7 +441,32 @@ function Load_aqayepardakht_Gateway() {
           exit;
         }
       }
+
+      public function add_sandbox_notice_to_admin_bar($wp_admin_bar) {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        $message = sprintf(
+            __('درگاه آقای پرداخت در حالت پرداخت آزمایشی فعال است. پرداخت‌های واقعی انجام نخواهند شد. برای غیرفعال کردن این حالت، به تنظیمات درگاه <a href="%s">اینجا</a> مراجعه کنید.'),
+            admin_url('admin.php?page=wc-settings&tab=checkout&section=wc_aqayepardakht')
+        );
+        echo '<div class="notice notice-error is-dismissible">';
+        echo '<p>' . $message . '</p>';
+        echo '</div>';
+      }
+
+      public function admin_notice_missing_pin() {
+        $pin = $this->settings[ 'pin' ];
+        if (empty($pin) && 'yes' === $this->settings[ 'enabled' ]) {
+          $message = sprintf(
+            __('پین درگاه آقای پرداخت خالی است. برای تکمیل مورد مربوطه به تنظیمات درگاه <a href="%s">اینجا</a> مراجعه کنید.',),
+            admin_url('admin.php?page=wc-settings&tab=checkout&section=wc_aqayepardakht')
+        );
+        echo '<div class="notice notice-warning is-dismissible">';
+        echo '<p>' . $message . '</p>';
+        echo '</div>';
+        }
+      }
+
     }
-  }
 }
-add_action( 'plugins_loaded', 'Load_aqayepardakht_Gateway', 0 );

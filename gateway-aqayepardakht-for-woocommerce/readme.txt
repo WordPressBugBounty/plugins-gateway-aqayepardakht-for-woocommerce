@@ -1,12 +1,12 @@
 ﻿=== Gateway AqayePardakht for Woocommerce ===
 Contributors: Aqaye Pardakht
 Tags: woocommerce,aqayepardakht, iran, persian, farsi,woocommerce persian, e-commerce, ووکامرس, ووکامرس فارسی,aqayepardakht woocommerce,بانک آقای پرداخت,درگاه پرداخت,payment gateway,woocommerce payment
-Donate link: http://aqayepardakht.ir
+Donate link: https://aqayepardakht.ir
 Requires at least: 4.5
-Tested up to: 6.4
+Tested up to: 6.7
 Stable tag: 1.1
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
 
 با نصب این پلاگین می توانید از خدمات درگاه آقای پرداخت برای پلاگین ووکامرس استفاده کنید!
 
@@ -36,6 +36,9 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 == Changelog ==
 
+= 1.6 =
+رفع مشکل "عدم وجود روش پرداخت" و  سازگاری با نسخه جدید ووکامرس
+
 = 1.5 =
 هماهنگ سازی بخش واحد مالی با واحد مالی در آقای پرداخت
-سازگاری با نسخه جدید وکامرس و وردپرس
+سازگاری با نسخه جدید ووکامرس و وردپرس
